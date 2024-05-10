@@ -9,7 +9,7 @@ class Book(models.Model):
     title = models.CharField(max_length=100)
     author = models.CharField(max_length=100)
     cover = models.IntegerField(choices=CoverChoices)
-    inventory = models.PositiveIntegerField(unique=True)
+    inventory = models.PositiveIntegerField()
     daily_fee = models.DecimalField(max_digits=5, decimal_places=2)
 
     class Meta:
