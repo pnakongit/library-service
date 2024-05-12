@@ -58,3 +58,23 @@ class BorrowingCreateSerializer(serializers.ModelSerializer):
             book.inventory -= 1
             book.save()
         return borrowing
+
+
+class BorrowingReturnSerializer(serializers.Serializer):
+
+    def validate(self, validated_data: dict) -> dict:
+
+        if self.instance.actual_return_date is not None:
+            raise serializers.ValidationError(
+                "Borrowing was already returned. Cannot return borrowing twice"
+            )
+        return validated_data
+
+    def update(self, instance, validated_data) -> Borrowing:
+        with transaction.atomic():
+            instance.actual_return_date = datetime.now().date()
+            instance.save()
+            book = instance.book
+            book.inventory += 1
+            book.save()
+        return instance
