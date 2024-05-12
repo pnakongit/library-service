@@ -1,6 +1,7 @@
 from typing import Type
 
 from rest_framework import viewsets, mixins
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.serializers import Serializer
 
 from borrowing.models import Borrowing
@@ -14,6 +15,7 @@ class BorrowingViewSet(
     viewsets.GenericViewSet,
 ):
     queryset = Borrowing.objects.all()
+    permission_classes = [IsAuthenticated]
 
     def get_serializer_class(self) -> Type[Serializer]:
         if self.action == "create":
