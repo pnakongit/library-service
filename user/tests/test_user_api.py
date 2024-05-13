@@ -52,3 +52,48 @@ class UnAuthenticatedUserManageApiTest(APITestCase):
 
         response = self.client.patch(USER_MANAGE_ENDPOINT)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class AuthenticatedUserManageApiTest(APITestCase):
+
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(
+            email="test@test.com",
+            password="password",
+        )
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
+
+    def test_retrieve_user(self) -> None:
+
+        response = self.client.get(USER_MANAGE_ENDPOINT)
+
+        serializer = UserSerializer(instance=self.user)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, serializer.data)
+
+    def test_put_user(self) -> None:
+        user = self.user
+        payload = {
+            "email": "new_test@test.com",
+            "password": "new_password1234",
+        }
+
+        response = self.client.put(USER_MANAGE_ENDPOINT, data=payload)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        user.refresh_from_db()
+        self.assertEqual(user.email, payload["email"])
+        self.assertTrue(user.check_password(payload["password"]))
+
+    def test_patch_user(self) -> None:
+        user = self.user
+        payload = {
+            "email": "new_test@test.com",
+        }
+
+        response = self.client.patch(USER_MANAGE_ENDPOINT, data=payload)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        user.refresh_from_db()
+        self.assertEqual(user.email, payload["email"])
