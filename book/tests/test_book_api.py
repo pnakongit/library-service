@@ -125,3 +125,74 @@ class AuthenticatedBookApiTest(APITestCase):
     def test_delete_authenticated_forbidden(self) -> None:
         response = self.client.delete(self.detail_url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+
+class IsAdminBookApiTest(APITestCase):
+
+    def setUp(self):
+        user = get_user_model().objects.create_superuser(
+            email="test@test.com",
+            password="password1234",
+        )
+        self.book = sample_book()
+        self.client = APIClient()
+        self.detail_url = reverse(
+            BOOK_DETAIL_VIEW_NAME,
+            kwargs={"pk": self.book.id},
+        )
+        self.client.force_authenticate(user=user)
+
+    def test_book_list(self) -> None:
+        for _ in range(5):
+            sample_book()
+
+        response = self.client.get(BOOK_LIST_URL)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        qs = Book.objects.all()
+        serializer = BookSerializer(qs, many=True)
+        self.assertEqual(response.data, serializer.data)
+
+    def test_book_retrieve(self) -> None:
+        response = self.client.get(self.detail_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        serializer = BookSerializer(instance=self.book)
+        self.assertEqual(response.data, serializer.data)
+
+    def test_book_create(self) -> None:
+        payload = {
+            "title": "test author",
+            "author": "test author",
+            "cover": Book.CoverChoices.HARD,
+            "inventory": 10,
+            "daily_fee": 0.25,
+        }
+        response = self.client.post(BOOK_LIST_URL, data=payload)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        book = Book.objects.get(pk=response.data["id"])
+
+        for key, value in payload.items():
+            self.assertEqual(getattr(book, key), value)
+
+    def test_book_update(self) -> None:
+        payload = {
+            "title": self.book.title + "updated",
+            "author": self.book.title + "updated",
+            "cover": self.book.cover,
+            "inventory": self.book.inventory + 1,
+            "daily_fee": self.book.daily_fee + 0.25,
+        }
+        response = self.client.put(self.detail_url, data=payload)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.book.refresh_from_db()
+
+        for key, value in payload.items():
+            self.assertEqual(getattr(self.book, key), value)
+
+    def test_book_delete(self) -> None:
+        response = self.client.delete(self.detail_url)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+        self.assertFalse(Book.objects.filter(pk=self.book.id).exists())
