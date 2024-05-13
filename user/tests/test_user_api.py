@@ -28,3 +28,27 @@ class UserCreateApiTest(APITestCase):
 
         self.assertEqual(user.email, payload["email"])
         self.assertEqual(user.check_password(payload["password"]), True)
+
+
+class UnAuthenticatedUserManageApiTest(APITestCase):
+
+    def setUp(self):
+        self.client = APIClient()
+
+    def test_get_method_authenticate_required(self) -> None:
+        self.client.logout()
+
+        response = self.client.get(USER_MANAGE_ENDPOINT)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_put_method_authenticate_required(self) -> None:
+        self.client.logout()
+
+        response = self.client.put(USER_MANAGE_ENDPOINT)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_patch_method_authenticate_required(self) -> None:
+        self.client.logout()
+
+        response = self.client.patch(USER_MANAGE_ENDPOINT)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
