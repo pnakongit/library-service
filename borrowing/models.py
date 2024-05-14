@@ -23,8 +23,8 @@ class Borrowing(models.Model):
                 name="expected_return_date_grates_than_borrow_date",
             ),
             CheckConstraint(
-                check=Q(actual_return_date__gt=F("borrow_date")),
-                name="actual_return_date_grates_than_borrow_date",
+                check=Q(actual_return_date__gte=F("borrow_date")),
+                name="actual_return_date_should_be_equal_or_grates_than_borrow_date",
             ),
         ]
 
