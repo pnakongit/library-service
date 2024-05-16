@@ -157,6 +157,10 @@ SPECTACULAR_SETTINGS = {
     "TITLE": "Library API Service",
     "DESCRIPTION": "Simple API service for managing books borrowing",
     "VERSION": "1.0.0",
+    "SWAGGER_UI_SETTINGS": {
+        "deepLinking": True,
+        "persistAuthorization": True,
+    },
 }
 
 TELEGRAM_BOT_API_KEY = os.getenv("TELEGRAM_BOT_API_KEY")
