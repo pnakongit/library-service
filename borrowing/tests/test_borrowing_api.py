@@ -3,7 +3,9 @@ from typing import Any
 from unittest import mock
 
 from django.contrib.auth import get_user_model
+from django.db.models import Q
 from django.urls import reverse
+from django.utils.http import urlencode
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from rest_framework.test import APITestCase, APIClient
@@ -97,6 +99,38 @@ class AuthenticatedBorrowingAPITest(APITestCase):
         serializer = BorrowingSerializer(qs, many=True)
 
         self.assertEqual(response.data, serializer.data)
+
+    def test_borrowing_list_filtering_by_is_active_parameter(self) -> None:
+        sample_borrowing(user=self.user)
+        returned_borrowing = sample_borrowing(user=self.user)
+        returned_borrowing.actual_return_date = datetime.date.today()
+        returned_borrowing.save()
+
+        another_user = get_user_model().objects.create_user(
+            email="another_test@test.com",
+            password="password1234",
+        )
+        sample_borrowing(user=another_user)
+        another_returned_borrowing = sample_borrowing(user=self.user)
+        another_returned_borrowing.actual_return_date = datetime.date.today()
+        another_returned_borrowing.save()
+
+        test_cases = [
+            (Q(actual_return_date__isnull=True, user=self.user), {"is_active": True}),
+            (Q(actual_return_date__isnull=False, user=self.user), {"is_active": False}),
+        ]
+
+        for q_filter, query_params in test_cases:
+            with self.subTest(q_filter=q_filter, query_params=query_params):
+                queryset = Borrowing.objects.filter(q_filter)
+
+                response = self.client.get(
+                    BORROWING_LIST_URL + "?" + urlencode(query_params)
+                )
+                self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+                serializer = BorrowingSerializer(queryset, many=True)
+                self.assertEqual(response.data, serializer.data)
 
     def test_borrowing_list_can_see_only_own_borrowings(self) -> None:
         another_user = get_user_model().objects.create_user(
