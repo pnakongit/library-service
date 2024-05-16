@@ -1,5 +1,6 @@
 from typing import Type
 
+from django.db.models import QuerySet
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets, mixins, status
 from rest_framework.decorators import action
@@ -30,6 +31,12 @@ class BorrowingViewSet(
         DjangoFilterBackend,
     ]
     filterset_class = BorrowingFilter
+
+    def get_queryset(self) -> QuerySet:
+        qs = super().get_queryset()
+        if self.action == "list":
+            return qs.select_related("book", "user")
+        return qs
 
     def get_serializer_class(self) -> Type[Serializer]:
         if self.action == "create":
