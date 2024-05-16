@@ -14,7 +14,9 @@ class IsBorrowingOwnerOrIsAdminFilterBackend(filters.BaseFilterBackend):
 
 
 class BorrowingFilter(django_filters.FilterSet):
-    user_id = django_filters.NumberFilter()
+    user_id = django_filters.NumberFilter(help_text="filtering by borrowing user")
     is_active = django_filters.BooleanFilter(
-        field_name="actual_return_date", lookup_expr="isnull"
+        field_name="actual_return_date",
+        lookup_expr="isnull",
+        help_text="filtering by borrowing status",
     )
