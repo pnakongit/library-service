@@ -8,6 +8,7 @@ from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from rest_framework.test import APITestCase, APIClient
 
+import borrowing
 from book.models import Book
 from book.tests.test_book_api import sample_book
 from borrowing.models import Borrowing
@@ -29,7 +30,7 @@ def sample_borrowing(*, user: User, **params: Any) -> Borrowing:
     return Borrowing.objects.create(**data)
 
 
-class UnAuthenticatedBorrowingAPITestCase(APITestCase):
+class UnAuthenticatedBorrowingAPITest(APITestCase):
 
     def setUp(self):
         user = get_user_model().objects.create_user(
@@ -66,7 +67,7 @@ class UnAuthenticatedBorrowingAPITestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
-class AuthenticatedBorrowingAPITestCase(APITestCase):
+class AuthenticatedBorrowingAPITest(APITestCase):
     def setUp(self):
         self.user = get_user_model().objects.create_user(
             email="test@test.com",
@@ -239,4 +240,56 @@ class AuthenticatedBorrowingAPITestCase(APITestCase):
         created_borrowing = Borrowing.objects.get(id=response.data["id"])
         mock_send_telegram_borrowing_notification.assert_called_once_with(
             created_borrowing
+        )
+
+    def test_return_borrowing(self) -> None:
+        borrowing = self.borrowing
+        self.assertFalse(borrowing.is_returned)
+
+        response = self.client.post(self.return_url, data={})
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+        borrowing.refresh_from_db()
+        self.assertTrue(self.borrowing.is_returned)
+
+    def test_return_borrowing_increase_book_inventory_by_1(self) -> None:
+        borrowing = self.borrowing
+        current_inventory = borrowing.book.inventory
+
+        response = self.client.post(self.return_url, data={})
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+        borrowing.book.refresh_from_db()
+        self.assertEqual(borrowing.book.inventory, current_inventory + 1)
+
+    def test_return_user_can_return_only_own_borrowing(self) -> None:
+        another_user = get_user_model().objects.create_user(
+            email="another_test@test.com",
+            password="password1234",
+        )
+        another_borrowing = sample_borrowing(user=another_user)
+
+        another_borrowing_return_url = reverse(
+            BORROWING_RETURN_VIEW_NAME,
+            kwargs={"pk": another_borrowing.id},
+        )
+
+        response = self.client.post(another_borrowing_return_url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_return_borrowing_can_not_be_returned_twice(self) -> None:
+        borrowing = self.borrowing
+
+        response = self.client.post(self.return_url)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        borrowing.refresh_from_db()
+        self.assertTrue(borrowing.is_returned)
+
+        response = self.client.post(self.return_url)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data["non_field_errors"],
+            ValidationError(
+                "Borrowing was already returned. Cannot return borrowing twice"
+            ).detail,
         )
