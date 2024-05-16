@@ -24,5 +24,17 @@ class UserManageAPIView(generics.RetrieveUpdateAPIView):
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated]
 
+    def get(self, request: Request, *args: Any, **kwargs: Any) -> Response:
+        """Return the authenticated user detail"""
+        return super().get(request, *args, **kwargs)
+
+    def put(self, request: Request, *args: Any, **kwargs: Any) -> Response:
+        """Update the authenticated user detail"""
+        return super().put(request, *args, **kwargs)
+
+    def patch(self, request: Request, *args: Any, **kwargs: Any) -> Response:
+        """Partial update the authenticated user detail"""
+        return super().patch(request, *args, **kwargs)
+
     def get_object(self) -> User:
         return self.request.user
