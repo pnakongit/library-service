@@ -53,7 +53,7 @@ class BorrowingViewSet(
     def retrieve(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """Returns a single borrowing by ID. Authenticated user have access to own borrowings.
         Admin user have access to all borrowings."""
-        return super().list(request, *args, **kwargs)
+        return super().retrieve(request, *args, **kwargs)
 
     def create(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """Create a new borrowing."""
