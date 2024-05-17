@@ -28,7 +28,7 @@ class BookViewSet(viewsets.ModelViewSet):
 
     def update(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """Update a book by its ID. Available only for an admin."""
-        return super().retrieve(request, *args, **kwargs)
+        return super().update(request, *args, **kwargs)
 
     def partial_update(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """Partial update a book by its ID. Available only for an admin."""
